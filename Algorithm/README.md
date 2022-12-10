@@ -8,7 +8,7 @@ This algorithm is inspired in [this article](https://www.scitepress.org/papers/2
 
 The algorithm will receive a point cloud for analysis and a list of rigid bodies to find within it.
 
-The point cloud is described as a set of $p$ points scattered in space. A list of $n$ rigid bodies is given, each rigid body $r$ is a set of $r_i \ (1 \leq i \leq n)$ point coordinates. Notice that $\sum _{i=1}^{n}r_i = p$ must be true, otherwise it would imply in occlusions in the point cloud or unknown rigid bodies in the scene.
+The point cloud is described as a set of $p$ points scattered in space. A list of $n$ rigid bodies is given, each rigid body $r$ is a set of $r_i \ (1 \leq i \leq n)$ point coordinates. Notice that $$\sum _{i=1}^{n}r_i = p$$ must be true, otherwise it would imply in occlusions in the point cloud or unknown rigid bodies in the scene.
 
 ### Output
 
