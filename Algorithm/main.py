@@ -4,92 +4,105 @@ import time as tm
 
 # GRAPHS
 
-def add_edge(graph, u, v):
-    graph[u].add(v)
-    graph[v].add(u)
+def add_edge(adj, u, v):
+    adj[u].add(v)
+    adj[v].add(u)
 
-def remove_edge(graph, u, v):
-    graph[u].remove(v)
-    graph[v].remove(u)
+def remove_edge(adj, u, v):
+    adj[u].remove(v)
+    adj[v].remove(u)
 
-def dfs(graph, visited, s):
+def dfs(adj, vis, s):
     stack = [s]
     vertices = []
 
     while len(stack):
         s = stack[-1]
         stack.pop()
-        if not visited[s]:
+        if not vis[s]:
             vertices.append(s)
-            visited[s] = True
-        for node in graph[s]:
-            if not visited[node]:
-                stack.append(node)
+            vis[s] = True
+        for v in adj[s]:
+            if not vis[v]:
+                stack.append(v)
 
     return vertices
 
-def bfs(graph, visited, s):
+def bfs(adj, vis, s):
     queue = [s]
-    visited[s] = True
+    vis[s] = True
     vertices = []
 
     while queue:
         s = queue.pop(0)
         vertices.append(s)
-        for i in graph[s]:
-            if visited[i] == False:
-                queue.append(i)
-                visited[i] = True
+        for v in adj[s]:
+            if vis[v] == False:
+                queue.append(v)
+                vis[v] = True
 
     return vertices
 
-def is_complete(graph):
-    for v in graph:
-        if len(v) != len(graph) - 1:
+def is_complete(adj):
+    for v in adj:
+        if len(v) != len(adj) - 1:
             return False
     return True
 
-def is_connected(graph):
-    visited = [False for _ in range(len(graph))]
-    dfs(graph, visited, 0)
+def is_sub_complete(adj, sub):
+    sub_size = len(sub)
+    for v in sub:
+        valid_edges = 0
+        for u in adj[v]:
+            if u in sub:
+                valid_edges += 1
+        if valid_edges != sub_size-1:
+            return False
+    return True
+
+def is_connected(adj):
+    visited = [False for _ in range(len(adj))]
+    dfs(adj, visited, 0)
     for v in visited:
         if v == False:
             return False
 
     return True
 
-def get_disconnected(graph):
-    visited = [False for _ in range(len(graph))]
+def get_disconnected(adj):
+    visited = [False for _ in range(len(adj))]
     disconnected = []
-    for u in range(len(graph)):
-        if visited[u] == False:
-            disconnected.append(dfs(graph, visited, u))
+    for v in range(len(adj)):
+        if visited[v] == False:
+            disconnected.append(dfs(adj, visited, v))
 
     return disconnected
 
-def separate(graph, grouping):
-    groups = [[] for _ in range(sum(grouping))]
-    for _ in range(sum(grouping)):
-        pos = 0
-        for rb_format, n_rb in enumerate(grouping):
-            while n_rb:
-                v = 0
-                while v < len(graph):
-                    v_adj = graph[v]
-                    if len(v_adj) == rb_format+1:
-                        groups[pos].append(v)
-                        for l in v_adj:
-                            groups[pos].append(l)
-                            for m in graph[l]:
-                                if m != v: graph[m].remove(l)
-                            graph[l] = set()
-                        graph[v] = set()
-                        grouping[rb_format] -= 1
-                        break
-                    v += 1
-                n_rb -= 1
-                pos += 1
-    return groups
+def separate(adj):
+    visited = [False for _ in range(len(adj))]
+    comp_graphs = []
+
+    for v in range(len(adj)):
+        if visited[v] == False:
+            u = next(iter(adj[v]))
+            possible = {v, u, *adj[v].intersection(adj[u])}
+            if is_sub_complete(adj, possible): 
+                comp_graphs.append(possible)
+                for p in possible:
+                    visited[p] = True
+
+    for init_graph in comp_graphs:
+        comp_disc_graphs = [list(init_graph)]
+        p_graph = init_graph
+        for c_graph in comp_graphs:
+                c_intersec = p_graph.intersection(c_graph)
+                if c_intersec == set():
+                    comp_disc_graphs.append(list(c_graph))
+                    p_graph = p_graph.union(c_graph)
+        if sum([len(g) for g in comp_disc_graphs]) == len(adj):
+            return np.array(comp_disc_graphs)
+
+    return np.array([])
 
 # TRACKING
 
@@ -114,26 +127,12 @@ def rb_identify(point_cloud, rb_known_d, epslon):
                 if abs(d - point_cloud_d[i][j]) < epslon:
                     add_edge(d_graph, i, j)
 
-    rb = get_disconnected(d_graph)
+    all_rb = separate(d_graph)
 
-    if len(rb) == n_rb:
-        return point_cloud[rb]
+    if len(all_rb) == n_rb:
+        return point_cloud[all_rb]
     else:
-        rb_indexes = [len(rb) for rb in rb_known_d]
-        grouping = [rb_indexes.count(n) for n in range(2, max(rb_indexes) + 1)]
-        rb = separate(d_graph, grouping)
-        if len(rb) == n_rb:
-            print('Ambiguity found!\n')
-            invalid = 0
-            for c_rb in rb:
-                if len(c_rb) == 0:
-                    invalid += 1
-            if invalid == 0:
-                return point_cloud[rb]
-            else:
-                print('Weird ambiguity!\n')
-                print(f'{n_rb} known rigid bodies, but {len(rb) - invalid} were detected.\n')
-                return np.array([])
+        return np.array([])
 
 # KINEMATICS
 
@@ -179,6 +178,7 @@ all_points = r_displace(np.random.permutation(np.concatenate(my_rb)), max_error)
 
 # calculate the distance matrices of the known rigid bodies
 my_rb_d = np.array([dist_matrix(rb) for rb in my_rb], dtype=object)
+
 print('\n---------------------------------------')
 print('\nRigid bodies in scene:\n')
 

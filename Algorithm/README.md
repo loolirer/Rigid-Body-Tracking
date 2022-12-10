@@ -14,7 +14,7 @@ The point cloud is described as a set of $p$ points scattered in space. A list o
 
 The output must be a partition of the initial point cloud: a list of $n$ set of points, each set containing the points judged to be part of a separate rigid body. Note that different rigid bodies *must not* share any number of points: all rigid bodies should have their unique set of points in space.
 
-## Current Version (v1)
+## Current Version (v2)
 
 Currently, the partition algorithm (in the function `rb_identify`) can be described as:
 
@@ -26,10 +26,8 @@ Currently, the partition algorithm (in the function `rb_identify`) can be descri
 3. For each distance $d$ in $rb_d$, search in $p_c$ distance matrix if there is any similar distance $d_ij$ 
 - If $|d-d_ij| < 2 \cdot \epsilon$, $d_ij$ is considered similar
 - For each similar $d_ij$, vertices $i$ and $j$ will be linked in a graph $G_d$
-4. Find the disconnected subgraphs of $G_d$ (*dfs* approach).
-5. If the number of disconnected subgraphs isn't equal to the number of rigid bodies, it will call the `separate` function.
-6. God knows what this function does, but it solves some ambiguities.
-7. Returns a list of sets containing point coordinates.
+4. It will call the `separate` function to separate $G_d$ into complete subgraphs
+5. Returns a list of sets containing point coordinates
 
 ### Observations
 
@@ -51,7 +49,7 @@ Regarding the main section:
 
 ### Problems
 
-- This version does not support *some* ambiguities: some ambiguities are taken away by the `separate` function.
+- This version does not support *some* ambiguities: some ambiguities are taken away by the now slighly better `separate` function.
 - The runtime of the function is relatively slow for expectations. It does not comport a large number of points efficiently.
 
 ---
