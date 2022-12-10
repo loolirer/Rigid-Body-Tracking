@@ -17,16 +17,16 @@ These points are spacially stactic in relation to each other. That means their d
 Some objetives are considered in the development process:
 
 - Since this is aimed for real time applications such as optical tracking systems, the process must be the most time efficient as possible.
-- Achieving this in polynomial time is key. These problems can become exponencially bigger with ease.
+- Achieving this in polynomial complexity is key. These problems can become exponencially bigger with ease.
 - Having valid partitions in a reasonable time limit *most* of the time is chosen over having valid partitions *all* the time.
 
 This project will stick to some features, initially:
 
 - The algorithm will be done in Python3.
 - Some external packages will be used to aid the computation process, such as:
-  - NumPy.
-  - SciPy.
-  - NetworkX.  
+  - NumPy
+  - SciPy
+  - NetworkX
 
 ## The Algorithm
 
