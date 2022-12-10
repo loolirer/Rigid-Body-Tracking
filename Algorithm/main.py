@@ -1,133 +1,33 @@
 import numpy as np
 import scipy as sp
 import time as tm
-
-# GRAPHS
-
-def add_edge(adj, u, v):
-    adj[u].add(v)
-    adj[v].add(u)
-
-def remove_edge(adj, u, v):
-    adj[u].remove(v)
-    adj[v].remove(u)
-
-def dfs(adj, vis, s):
-    stack = [s]
-    vertices = []
-
-    while len(stack):
-        s = stack[-1]
-        stack.pop()
-        if not vis[s]:
-            vertices.append(s)
-            vis[s] = True
-        for v in adj[s]:
-            if not vis[v]:
-                stack.append(v)
-
-    return vertices
-
-def bfs(adj, vis, s):
-    queue = [s]
-    vis[s] = True
-    vertices = []
-
-    while queue:
-        s = queue.pop(0)
-        vertices.append(s)
-        for v in adj[s]:
-            if vis[v] == False:
-                queue.append(v)
-                vis[v] = True
-
-    return vertices
-
-def is_complete(adj):
-    for v in adj:
-        if len(v) != len(adj) - 1:
-            return False
-    return True
-
-def is_sub_complete(adj, sub):
-    sub_size = len(sub)
-    for v in sub:
-        valid_edges = 0
-        for u in adj[v]:
-            if u in sub:
-                valid_edges += 1
-        if valid_edges != sub_size-1:
-            return False
-    return True
-
-def is_connected(adj):
-    visited = [False for _ in range(len(adj))]
-    dfs(adj, visited, 0)
-    for v in visited:
-        if v == False:
-            return False
-
-    return True
-
-def get_disconnected(adj):
-    visited = [False for _ in range(len(adj))]
-    disconnected = []
-    for v in range(len(adj)):
-        if visited[v] == False:
-            disconnected.append(dfs(adj, visited, v))
-
-    return disconnected
-
-def separate(adj):
-    visited = [False for _ in range(len(adj))]
-    comp_graphs = []
-
-    for v in range(len(adj)):
-        if visited[v] == False:
-            u = next(iter(adj[v]))
-            possible = {v, u, *adj[v].intersection(adj[u])}
-            if is_sub_complete(adj, possible): 
-                comp_graphs.append(possible)
-                for p in possible:
-                    visited[p] = True
-
-    for init_graph in comp_graphs:
-        comp_disc_graphs = [list(init_graph)]
-        p_graph = init_graph
-        for c_graph in comp_graphs:
-                c_intersec = p_graph.intersection(c_graph)
-                if c_intersec == set():
-                    comp_disc_graphs.append(list(c_graph))
-                    p_graph = p_graph.union(c_graph)
-        if sum([len(g) for g in comp_disc_graphs]) == len(adj):
-            return np.array(comp_disc_graphs)
-
-    return np.array([])
+import networkx as nx
 
 # TRACKING
 
-def dist_matrix(point_cloud):
-    n_points = point_cloud.shape[0]
-    d_m = np.zeros(shape=(n_points,n_points))
-    for i in range(n_points):
-        for j in range(i+1, n_points):
-            d_m[i][j] = sp.spatial.distance.euclidean(point_cloud[i], point_cloud[j])
-    return d_m
-
 def rb_identify(point_cloud, rb_known_d, epslon):
-    point_cloud_d = dist_matrix(point_cloud)
-    n_points, n_rb = point_cloud_d.shape[0], rb_known_d.shape[0]
-    simp_rb_known_d = np.array([d for rb in rb_known_d for d in rb[np.nonzero(rb)]])
+    n_points = point_cloud.shape[0]
+    n_ideal_edges = len(rb_known_d)
 
-    d_graph = [set() for _ in range(n_points)]
+    point_cloud_d = sp.spatial.distance.pdist(point_cloud, metric='euclidean')
 
-    for d in simp_rb_known_d:
+    d_graph = nx.Graph()
+
+    # Graph generation
+    for d in rb_known_d:
         for i in range(n_points):
             for j in range(i+1, n_points):
-                if abs(d - point_cloud_d[i][j]) < epslon:
-                    add_edge(d_graph, i, j)
+                if abs(d - point_cloud_d[(n_points - 1 + n_points - i)*(i)//2 - i + j - 1]) < epslon:
+                    d_graph.add_edge(i, j)
 
-    all_rb = separate(d_graph)
+    # Girvan-Newman of community detection
+    for _ in range(d_graph.number_of_edges() - n_ideal_edges):
+        edge_betweenness = nx.edge_betweenness_centrality(d_graph).items()
+        edges_to_delete = sorted(edge_betweenness, key=lambda pair: -pair[1])[0][0]
+    
+        d_graph.remove_edge(*edges_to_delete)
+
+    all_rb = [list(rb_points[1]) for rb_points in enumerate(nx.connected_components(d_graph))]
 
     if len(all_rb) == n_rb:
         return point_cloud[all_rb]
@@ -166,7 +66,7 @@ def r_translate(model, min, max):
 np.set_printoptions(precision=2)
 
 max_error = 0.7 # in centimeters
-n_rb = 5 # number of rigid bodies in scene
+n_rb = 15 # number of rigid bodies in scene
 # mambo parrot marker base (in centimeters)
 mambo = np.array([[-16, 16, 0], [16, 16, 0], [16, -16, 0]])
 
@@ -177,7 +77,7 @@ my_rb = [r_translate(mambo, -400, 400) for _ in range(n_rb)]
 all_points = r_displace(np.random.permutation(np.concatenate(my_rb)), max_error)
 
 # calculate the distance matrices of the known rigid bodies
-my_rb_d = np.array([dist_matrix(rb) for rb in my_rb], dtype=object)
+my_rb_d = np.concatenate([sp.spatial.distance.pdist(rb, metric='euclidean') for rb in my_rb])
 
 print('\n---------------------------------------')
 print('\nRigid bodies in scene:\n')

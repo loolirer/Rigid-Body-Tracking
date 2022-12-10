@@ -14,7 +14,7 @@ The point cloud is described as a set of $p$ points scattered in space. A list o
 
 The output must be a partition of the initial point cloud: a list of $n$ set of points, each set containing the points judged to be part of a separate rigid body. Note that different rigid bodies *must not* share any number of points: all rigid bodies should have their unique set of points in space.
 
-## Current Version (v2)
+## Current Version (v3)
 
 Currently, the partition algorithm (in the function `rb_identify`) can be described as:
 
@@ -26,8 +26,10 @@ Currently, the partition algorithm (in the function `rb_identify`) can be descri
 3. For each distance $d$ in $rb_d$, search in $p_c$ distance matrix if there is any similar distance $d_ij$ 
 - If $|d-d_ij| < 2 \cdot \epsilon$, $d_ij$ is considered similar
 - For each similar $d_ij$, vertices $i$ and $j$ will be linked in a graph $G_d$
-4. It will call the `separate` function to separate $G_d$ into complete subgraphs
-5. Returns a list of sets containing point coordinates
+4. The Girvan-Newman community detection algorithm will be used to find separate the rigid bodies
+Let $e_i$ being the ideal number of distances that should be detected and $e_d$ the actual number of distances detected, the algorithm will run $e_d - e_i$ times (it will cut $e_d - e_i$ edges)
+5. Having the excess edges removed of the graph, it will find the disconnected subgraphs of the modified $G_d$
+6. Returns a list of sets containing point coordinates
 
 ### Observations
 
@@ -36,7 +38,6 @@ General features:
 - It is noticeable that the algorithm abstracts the matching coordinates problem to a graph problem.
 - In some cases when two separate rigid bodies are close, a distance $d_ij$ between two of their points could coincide with some of their internal distances, connecting them in the graph abstraction. These coincidences will be called **ambiguities**.
 - The kinematics section is made to simulate some point cloud capturing conditions.
-- The graph section is a homebrewed implementation of graphs.
 
 Regarding the main section:
 
@@ -49,7 +50,7 @@ Regarding the main section:
 
 ### Problems
 
-- This version does not support *some* ambiguities: some ambiguities are taken away by the now slighly better `separate` function.
+- This version support *most* ambiguities: most ambiguities (but not all) are taken away by the Girvan-Newman algorithm.
 - The runtime of the function is relatively slow for expectations. It does not comport a large number of points efficiently.
 
 ---
