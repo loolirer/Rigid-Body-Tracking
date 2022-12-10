@@ -8,6 +8,10 @@ def add_edge(graph, u, v):
     graph[u].add(v)
     graph[v].add(u)
 
+def remove_edge(graph, u, v):
+    graph[u].remove(v)
+    graph[v].remove(u)
+
 def dfs(graph, visited, s):
     stack = [s]
     vertices = []
@@ -21,8 +25,38 @@ def dfs(graph, visited, s):
         for node in graph[s]:
             if not visited[node]:
                 stack.append(node)
-    
+
     return vertices
+
+def bfs(graph, visited, s):
+    queue = [s]
+    visited[s] = True
+    vertices = []
+
+    while queue:
+        s = queue.pop(0)
+        vertices.append(s)
+        for i in graph[s]:
+            if visited[i] == False:
+                queue.append(i)
+                visited[i] = True
+
+    return vertices
+
+def is_complete(graph):
+    for v in graph:
+        if len(v) != len(graph) - 1:
+            return False
+    return True
+
+def is_connected(graph):
+    visited = [False for _ in range(len(graph))]
+    dfs(graph, visited, 0)
+    for v in visited:
+        if v == False:
+            return False
+
+    return True
 
 def get_disconnected(graph):
     visited = [False for _ in range(len(graph))]
@@ -32,6 +66,30 @@ def get_disconnected(graph):
             disconnected.append(dfs(graph, visited, u))
 
     return disconnected
+
+def separate(graph, grouping):
+    groups = [[] for _ in range(sum(grouping))]
+    for _ in range(sum(grouping)):
+        pos = 0
+        for rb_format, n_rb in enumerate(grouping):
+            while n_rb:
+                v = 0
+                while v < len(graph):
+                    v_adj = graph[v]
+                    if len(v_adj) == rb_format+1:
+                        groups[pos].append(v)
+                        for l in v_adj:
+                            groups[pos].append(l)
+                            for m in graph[l]:
+                                if m != v: graph[m].remove(l)
+                            graph[l] = set()
+                        graph[v] = set()
+                        grouping[rb_format] -= 1
+                        break
+                    v += 1
+                n_rb -= 1
+                pos += 1
+    return groups
 
 # TRACKING
 
@@ -46,11 +104,11 @@ def dist_matrix(point_cloud):
 def rb_identify(point_cloud, rb_known_d, epslon):
     point_cloud_d = dist_matrix(point_cloud)
     n_points, n_rb = point_cloud_d.shape[0], rb_known_d.shape[0]
-    rb_known_d = np.array([d for rb in rb_known_d for d in rb[np.nonzero(rb)]])
+    simp_rb_known_d = np.array([d for rb in rb_known_d for d in rb[np.nonzero(rb)]])
 
     d_graph = [set() for _ in range(n_points)]
 
-    for d in rb_known_d:
+    for d in simp_rb_known_d:
         for i in range(n_points):
             for j in range(i+1, n_points):
                 if abs(d - point_cloud_d[i][j]) < epslon:
@@ -61,14 +119,27 @@ def rb_identify(point_cloud, rb_known_d, epslon):
     if len(rb) == n_rb:
         return point_cloud[rb]
     else:
-        print(f'{n_rb} known rigid bodies, but {len(rb)} were detected.')
-        return np.array([])
+        rb_indexes = [len(rb) for rb in rb_known_d]
+        grouping = [rb_indexes.count(n) for n in range(2, max(rb_indexes) + 1)]
+        rb = separate(d_graph, grouping)
+        if len(rb) == n_rb:
+            print('Ambiguity found!\n')
+            invalid = 0
+            for c_rb in rb:
+                if len(c_rb) == 0:
+                    invalid += 1
+            if invalid == 0:
+                return point_cloud[rb]
+            else:
+                print('Weird ambiguity!\n')
+                print(f'{n_rb} known rigid bodies, but {len(rb) - invalid} were detected.\n')
+                return np.array([])
 
 # KINEMATICS
 
 def normalize(vector):
     norm = np.linalg.norm(vector)
-    if norm == 0: 
+    if norm == 0:
        return vector
     return vector / norm
 
@@ -82,7 +153,7 @@ def r_displace(point_cloud, delta):
 
 def r_translate(model, min, max):
     displacement = [np.random.randint(min,max), np.random.randint(min,max),np.random.randint(max)]
-    
+
     d_model = np.copy(model)
 
     for marker in d_model:
@@ -103,25 +174,25 @@ mambo = np.array([[-16, 16, 0], [16, 16, 0], [16, -16, 0]])
 # translate randomly all the mambos in the scene
 my_rb = [r_translate(mambo, -400, 400) for _ in range(n_rb)]
 
-# simulate random deviations in measurements of point coordinates 
+# simulate random deviations in measurements of point coordinates
 all_points = r_displace(np.random.permutation(np.concatenate(my_rb)), max_error)
 
 # calculate the distance matrices of the known rigid bodies
-d_my_rb = np.array([dist_matrix(rb) for rb in my_rb], dtype=object)
+my_rb_d = np.array([dist_matrix(rb) for rb in my_rb], dtype=object)
 print('\n---------------------------------------')
 print('\nRigid bodies in scene:\n')
 
 # initiate timer
 start = tm.time_ns() / 1e6
 # identify rigid bodies, save which markers define a rigid body
-all_rb = rb_identify(all_points, d_my_rb, max_error * 2)
+all_rb = rb_identify(all_points, my_rb_d, max_error * 2)
 # end timer
 end = tm.time_ns() / 1e6
 
 if all_rb.any():
     print('Number of rigid bodies found:', len(all_rb))
 else:
-    print('\nNo correct match!')
+    print('No correct match!')
 
-print('\nTime elapsed: {:.5f} ms'.format(end-start))
+print('\nTime elapsed: {:.5f} ms'.format((end-start)))
 print('\n---------------------------------------\n')
