@@ -45,7 +45,7 @@ def main(save):
 
     # Saving point cloud routine
     if save:
-        with open("Algorithm/PCD.xyz", 'w') as xyz_file:
+        with open("PCD.xyz", 'w') as xyz_file:
             for rb in all_rb:
                 for c in rb:
                     xyz_file.write(f"{c[0]:11.6f} {c[1]:11.6f} {c[2]:11.6f}\n")
@@ -53,4 +53,4 @@ def main(save):
         print('Point cloud saved in PCD.xyz!\n')
 
 if __name__ == '__main__':
-    main(save=False)
+    main(save=True)
