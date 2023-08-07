@@ -11,13 +11,13 @@ def scene(save):
 
     capture_error = 0.7 # Max capture error in centimeters
     # Parrot Mambo marker base (in centimeters)
-    n_mambo, mambo = 5, np.array([[-8, 8, 0], [8, 8, 0], [8, -8, 0], [-8, -8, 0], [0, 4, 0]])
+    n_mambo, mambo = 4, np.array([[-8, 8, 0], [8, 8, 0], [8, -8, 0], [-8, -8, 0], [0, 4, 0]])
     # DJI Tello marker base (in centimeters)
     n_tello, tello = 0, np.array([[-12, 12, 0], [12, 12, 0], [-12, -12, 0], [0, 0, 0]])
     
     # Rotate and translate randomly all the drones
-    scene_mambos = [random_translate(random_rotate(mambo, 30, 30, 180), 200, 200, 400) for _ in range(n_mambo)]
-    scene_tellos = [random_translate(random_rotate(tello, 30, 30, 180), 200, 200, 400) for _ in range(n_tello)]
+    scene_mambos = [random_translate(random_rotate(mambo, 30, 30, 180), 50, 50, 10) for _ in range(n_mambo)]
+    scene_tellos = [random_translate(random_rotate(tello, 30, 30, 180), 50, 50, 10) for _ in range(n_tello)]
     
     scene_rb = scene_mambos + scene_tellos
     
@@ -27,7 +27,7 @@ def scene(save):
     # Generate a list of Rigid Bodies in the scene
     scene_rb = list(map(RigidBody, scene_rb))
 
-    print('\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯')
+    print('\n-------------------------------')
     print('# SCENE ANALYSIS\n')
 
     start_ms = tm.time_ns() / 1e6 # Initiate timer
@@ -48,12 +48,12 @@ def scene(save):
     
     # Collecting scene point cloud for analysis
     if save:
-        with open("Collect/PCD.xyz", 'w') as xyz_file:
+        with open("collect/PCD.xyz", 'w') as xyz_file:
             for c in scene_pcd:
                 xyz_file.write(f"{c[0]:11.6f} {c[1]:11.6f} {c[2]:11.6f}\n")
         
         print('\nPoint cloud saved in PCD.xyz')
-    print('⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n')
+    print('-------------------------------\n')
 
 if __name__ == '__main__':
-    scene(save=False)
+    scene(save=True)
