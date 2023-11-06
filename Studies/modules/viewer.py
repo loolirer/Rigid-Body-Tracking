@@ -112,7 +112,7 @@ class Viewer:
                 )
             )
 
-    def add_point(self, point, name, color=None):
+    def add_points(self, point, name, color=None):
         self.figure.add_trace(
             go.Scatter3d(
                 x=point[0],
