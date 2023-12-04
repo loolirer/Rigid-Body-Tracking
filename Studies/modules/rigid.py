@@ -43,8 +43,12 @@ def cube(position=np.zeros(3).reshape(-1,1), size=1/2):
 
     return vertices
 
-# Returns the vertices of an unit square with corner in origin
-def square(position=np.zeros(3).reshape(-1,1), size=1/2):
-    vertices = np.array([[(V>>1)&1, (V>>0)&1, 0] for V in range(4)]).T*size+position
+def rectangle(width = 1, height = 1):
+    # Coordenadas dos vértices do retângulo
+    x_coords = np.array([-width/2, width/2, width/2, -width/2])
+    y_coords = np.array([height/2, height/2, -height/2, -height/2])
 
-    return vertices
+    # Criando um array com as coordenadas dos vértices
+    rectangle_coords = np.row_stack((x_coords, y_coords,np.zeros(4)))
+    
+    return rectangle_coords
