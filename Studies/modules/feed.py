@@ -17,6 +17,11 @@ class Feed:
             )
         )
 
+        self.figure.update_yaxes(
+            scaleanchor="x",
+            scaleratio=1
+        )
+        
         self.figure.update_layout(
             xaxis_title='x',
             yaxis_title='y',
@@ -38,6 +43,13 @@ class Feed:
             )
         )
 
+        self.figure.add_shape(
+            type='rect',
+            x0=0, y0=0, x1=res[0], y1=res[1],
+            line=dict(color='black'),
+        )
+
+
     def add_points(self, point, name, color=None):
         self.figure.add_trace(
             go.Scatter(
@@ -45,7 +57,7 @@ class Feed:
                 y=point[1],
                 mode='markers',
                 marker=dict(
-                    size=7,
+                    size=5,
                     opacity=0.80,
                     color=color
                 ),
