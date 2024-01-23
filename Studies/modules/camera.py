@@ -107,7 +107,7 @@ def calibrate_camera(world_points, image_points):
 
     # Reconstrua a matriz de projeção da câmera
     C_matrix = c.reshape(3, 4)
-    print(C_matrix)
+    print("DLT camera matrix: \n", C_matrix)
 
     return C_matrix
 
@@ -126,4 +126,4 @@ def extract_camera_parameters(projection_matrix):
     # Extrair o vetor de translação t
     t = RT[:3, 3]
 
-    return K[:, 1:], R, t
+    return K, R, t
